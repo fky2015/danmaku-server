@@ -56,7 +56,7 @@ impl Handler<messages::Connect> for ChatServer {
     type Result = usize;
 
     fn handle(&mut self, msg: messages::Connect, _: &mut Self::Context) -> Self::Result {
-        println!("Someone joined");
+        println!("someone joined");
 
         // notify all users in same room
         self.broadcast_message(&msg.room, "Someone joined", 0);

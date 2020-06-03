@@ -13,7 +13,7 @@ pub struct ChatServer {
     pub sessions: HashMap<usize, Recipient<messages::Message>>,
     pub rooms: HashMap<String, HashSet<usize>>,
     pub rng: ThreadRng,
-    pub monitors: HashMap<usize, Context<WsChatSession>>,
+    // pub monitors: HashMap<usize, Context<WsChatSession>>,
 }
 
 #[derive(PartialEq, Debug)]

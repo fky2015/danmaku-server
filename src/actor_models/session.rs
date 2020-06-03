@@ -90,6 +90,7 @@ impl Actor for WsChatSession {
         // HttpContext::state() is instance of WsChatSessionState, state is shared
         // across all routes within application
         let addr = ctx.address();
+        println!("{:?} try to join in", self.identity);
         self.addr
             .send(messages::Connect {
                 addr: addr.recipient(),
@@ -177,6 +178,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         println!("parse err!");
                     };
                 }
+            },
+            ws::Message::Text(text) => {
+                let msg = text.trim().to_owned();
+                println!("[{:?}]: message reject (due to not login)", self.identity);
             }
             ws::Message::Binary(_) => println!("Unexpected binary"),
             ws::Message::Close(_) => {

@@ -26,7 +26,7 @@ mod session_models;
 
 /// AuthID has two methods to identify a user
 /// `uuid` is used as OAuth2 login,
-/// `secret_key` is used as Admin
+/// `secret_key` is used by Admin
 /// otherwise it's a anonymous user.
 #[derive(Deserialize, Debug)]
 struct Auth {
@@ -39,6 +39,7 @@ async fn chat_route(
     req: HttpRequest,
     stream: web::Payload,
     srv: web::Data<Addr<ChatServer>>,
+    config: web::Data<Config>,
     web::Query(auth): web::Query<Auth>,
     server_sessions: web::Data<session_models::SessionMap>,
 ) -> Result<HttpResponse, Error> {
@@ -58,13 +59,17 @@ async fn chat_route(
                     .map(|ui| ui.preferred_username)
             })
             .flatten();
-        match name {
-            None => actor_models::Identity::Anonymous,
-            Some(name)=> actor_models::Identity::User(name),
+
+        if config.required_login {
+            match name {
+                None => actor_models::Identity::Anonymous,
+                Some(name)=> actor_models::Identity::User(name),
+            }
+        }  else {
+            actor_models::Identity::User("Anonymous".to_owned())
         }
+
     };
-
-
     ws::start(
         WsChatSession {
             id: 0,
@@ -224,8 +229,12 @@ fn default_address() -> String {
     "0.0.0.0".to_owned()
 }
 
+fn default_required_login() -> bool {
+    false
+}
+
 /// default config struct
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 struct Config {
     client_id:String,
@@ -237,7 +246,11 @@ struct Config {
     address : String,
     #[serde(default = "default_port")]
     port: u32,
+    secret_key: String,
+    #[serde(default = "default_required_login")]
+    required_login: bool,
 }
+
 /// then
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
@@ -252,20 +265,24 @@ async fn main() -> std::io::Result<()> {
             exit(1);
         }
     };
+    // clone before partial moved.
+    let config_clone = config.clone();
+
     // Create an OAuth2 client by specifying the client ID, client secret, authorization URL and
     // token URL.
     // BasicTokenResponse<EmptyExtraTokenFields, BasicTokenType>, BasicTokenType
     let client =
         BasicClient::new(
-            ClientId::new(config.client_id),
-            Some(ClientSecret::new(config.client_secret)),
-            AuthUrl::new(config.auth_url).map_err(err2internal_err).unwrap(),
-            Some(TokenUrl::new(config.token_url).map_err(err2internal_err).unwrap()),
+            ClientId::new(config.client_id.to_owned()),
+            Some(ClientSecret::new(config.client_secret.to_owned())),
+            AuthUrl::new(config.auth_url.to_owned()).map_err(err2internal_err).unwrap(),
+            Some(TokenUrl::new(config.token_url.to_owned()).map_err(err2internal_err).unwrap()),
         )
             // Set the URL the user will be redirected to after the authorization process.
-            .set_redirect_url(RedirectUrl::new(config.redirect_url).map_err(err2internal_err).unwrap());
+            .set_redirect_url(RedirectUrl::new(config.redirect_url.to_owned()).map_err(err2internal_err).unwrap());
 
     let client =web::Data::new(client);
+
 
 
     env_logger::init();
@@ -275,7 +292,7 @@ async fn main() -> std::io::Result<()> {
     let session_map = web::Data::new(session_models::SessionMap::default());
 
     // Create Http server with websocket support
-    HttpServer::new(move || {
+    HttpServer::new(move |  | {
         App::new()
             .app_data(session_map.clone())
             .app_data(client.clone())
@@ -285,6 +302,7 @@ async fn main() -> std::io::Result<()> {
                     .secure(false),
             ))
             .data(server.clone())
+            .data(config_clone.clone())
             // redirect to index.html
             .service(web::resource("/").route(web::get().to(index)))
             .service(web::resource("/ws/").to(chat_route))
