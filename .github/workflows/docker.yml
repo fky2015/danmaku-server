@@ -8,7 +8,10 @@ jobs:
   built_and_test_docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: docker/build-push-action@v1
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Publish Image
+        uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
