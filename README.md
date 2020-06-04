@@ -8,11 +8,13 @@
 -->
   <h3 align="center">Danmaku Server</h3>
   
+[![Status][status-badge]][status-url]
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
+[![Docker Image Size][docker-image-size-badge]][docker-image-size-url]
+[![MIT License][license-badge]][license-url]
 
 A [DPlayer](dplayer-url) Compatible Danmaku Server built with actix-web.
     
@@ -174,10 +176,12 @@ Project Link: [https://github.com/github_username/repo](https://github.com/fky20
 [stars-url]: https://github.com/fky2015/danmaku-server/stargazers
 [issues-shield]: https://img.shields.io/github/issues/fky2015/danmaku-server.svg?style=flat-square
 [issues-url]: https://github.com/fky2015/danmaku-server/issues
-[license-shield]: https://img.shields.io/github/license/fky2015/danmaku-server.svg?style=flat-square
+[license-badge]: https://flat.badgen.net/github/license/fky2015/danmaku-server?color=purple
 [license-url]: https://github.com/fky2015/danmaku-server/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/othneildrew
+[status-badge]: https://flat.badgen.net/github/status/fky2015/danmaku-server
+[status-url]: https://github.com/fky2015/danmaku-server
+[docker-image-size-badge]: https://badgen.net/docker/size/fkynjyq/danmaku-server?color=green
+[docker-image-size-url]: https://hub.docker.com/repository/docker/fkynjyq/danmaku-server
 [product-screenshot]: images/screenshot.png
 [actix-web-url]: https://github.com/actix/actix-web
 [dplayer-url]: https://github.com/MoePlayer/DPlayer
