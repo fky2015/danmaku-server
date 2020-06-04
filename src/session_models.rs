@@ -1,3 +1,5 @@
+//! Implement server logic, unrelated to actor.
+
 use oauth2::{PkceCodeVerifier, CsrfToken};
 use std::collections::HashMap;
 

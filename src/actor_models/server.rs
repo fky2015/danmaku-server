@@ -1,3 +1,10 @@
+//! Implement behaviour of `ChatServer`.
+//!
+//! [`ChaServer`] is a map, store the relation ship between id, room id and real entity.
+//!
+//!
+
+
 use super::*;
 
 
@@ -43,10 +50,19 @@ impl Actor for ChatServer {
     type Context = Context<Self>;
 }
 
+
 impl Handler<messages::ClientMessage> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: messages::ClientMessage, _: &mut Self::Context) {
+        // do some checks before broadcast.
+        // 根据 msg 本身进行过滤。
+        let data = msg.msg.to_owned();
+        // TODO: currently working on.
+        // if let Ok(danmaku) = data.parse::<Danmaku>() {
+        //
+        // }
+
         self.broadcast_message(&msg.room, &msg.msg, msg.id);
     }
 }

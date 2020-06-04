@@ -100,7 +100,26 @@ cargo run
 <!-- ROADMAP -->
 ## Roadmap
 
-**TODO**
+- Feature
+    - [ ] **Filter malicious behavior**
+        - [x] Anonymous user
+        - [ ] **Danmaku text longer than limit**.
+        - [ ] Frequently sent messages. 
+    - [ ] Provide metric data.
+    - [ ] Better server log
+- Role
+    - [ ] Add Admin
+    - [ ] Add control message
+        - [ ] Retrieve log
+    - [ ] New project for sending danmaku or manage server via cli. 
+- CI/CD
+    - [ ] Docker support.
+    - [ ] Add unit test to core function.
+    - [ ] Add CI.
+    - [ ] Add CD to auto deploy test server. 
+
+
+***Bold** text means currently working on.*
 
 See the [open issues](https://github.com/github_username/repo/issues) for a list of proposed features (and known issues).
 

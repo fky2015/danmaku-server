@@ -23,6 +23,7 @@ use std::process::exit;
 use actix_files::NamedFile;
 
 mod session_models;
+mod message_processor;
 
 /// AuthID has two methods to identify a user
 /// `uuid` is used as OAuth2 login,
@@ -219,16 +220,17 @@ async fn login(
         .finish())
 }
 
-/// default port
+/// Default port.
 fn default_port() -> u32 {
     80
 }
 
-/// default address
+/// Default address.
 fn default_address() -> String {
     "0.0.0.0".to_owned()
 }
 
+/// Default `.env` variable `REQUIRED_LOGIN`.
 fn default_required_login() -> bool {
     false
 }

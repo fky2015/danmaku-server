@@ -1,0 +1,9 @@
+FROM rust:1.40 as builder
+WORKDIR /usr/src/myapp
+COPY . .
+RUN cargo install --path . --verbose
+
+FROM debian:buster-slim
+#RUN apt-get update && apt-get install -y extra-runtime-dependencies
+COPY --from=builder /usr/local/cargo/bin/danmaku-server /usr/local/bin/danmaku-server
+CMD ["danmaku-server"]

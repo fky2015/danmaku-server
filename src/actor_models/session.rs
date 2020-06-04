@@ -1,12 +1,19 @@
+//! Implement behaviour of `WsChatSession`.
+
 use super::*;
 use serde::Deserialize;
 use serde_json;
 use std::str::FromStr;
 
+
 /// How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 /// How long before lack of client response cause a timeout
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
+
+
+
+
 
 #[derive(Deserialize)]
 #[allow(dead_code)]
@@ -119,7 +126,7 @@ impl Actor for WsChatSession {
     }
 }
 
-/// Handle messages from chat server, we simply send it to peer websocket
+/// Handle messages from chat server, we simply send it to peer websocket.
 impl Handler<messages::Message> for WsChatSession {
     type Result = ();
     fn handle(&mut self, msg: messages::Message, ctx: &mut Self::Context) {
@@ -127,7 +134,7 @@ impl Handler<messages::Message> for WsChatSession {
     }
 }
 
-/// WebSocket message handler
+/// Handle messages from peer websocket, we should apply all the check before we make decision.
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         let msg = match msg {
@@ -138,6 +145,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
             Ok(msg) => msg,
         };
 
+        // TODO: log
         println!("WEBSOCKET MESSAGE: {:?}", msg);
 
         match msg {
@@ -148,37 +156,58 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
             ws::Message::Pong(_) => {
                 self.hb = Instant::now();
             }
+            // Only `Admin` and `User` can send message to server.
             ws::Message::Text(text) if self.is_login() => {
                 let msg = text.trim().to_owned();
 
-                println!("[{:?}]: {}", self.identity, msg);
-
-                if msg.starts_with('/') & msg.contains(' ') {
-                    // todo: 2. 获取统计信息（房间成员，房间弹幕） 这应该是 actor 的定时任务
-                    // todo: 3. 获取某个成员统计信息（发弹幕数，登录时间，错误次数）
+                // 这里会进行相关处理。
+                // 与 `ChatServer` 的分工不同，
+                // 这里处理的依据是 `payload.data` 以外的部分。
+                // 比如 `is_login`, 消息类型, 发送频率，是否在黑名单之类的。
+                if let Ok(payload) = msg.parse::<Payload>() {
+                    // we can get it's type.
+                    self.addr.do_send(messages::ClientMessage {
+                        id: self.id,
+                        // 为什么要分开，因为这样后面就不需要再 parse 了
+                        r#type: payload.r#type,
+                        msg: payload.data,
+                        room: self.room.to_owned(),
+                    })
                 } else {
-                    // it's a danmaku format
-
-                    // parse to check if it's a valid `Danmaku` format
-                    if let Ok(danmaku) = msg.parse::<Danmaku>() {
-                        match danmaku.valid() {
-                            Ok(_) => {
-                                // send message to chat server
-                                self.addr.do_send(messages::ClientMessage {
-                                    id: self.id,
-                                    msg,
-                                    room: self.room.to_owned(),
-                                });
-                            }
-                            Err(e) => {
-                                println!("Err: {}", e);
-                            }
-                        }
-                    } else {
-                        println!("parse err!");
-                    };
+                    // throw a parse err!
+                    // TODO: it may be a malicious behaviour.
+                    println!("parse err!");
                 }
+
+                // println!("[{:?}]: {}", self.identity, msg);
+                //
+                // if msg.starts_with('/') & msg.contains(' ') {
+                //     // todo: 2. 获取统计信息（房间成员，房间弹幕） 这应该是 actor 的定时任务
+                //     // todo: 3. 获取某个成员统计信息（发弹幕数，登录时间，错误次数）
+                // } else {
+                //     // it's a danmaku format
+                //
+                //     // parse to check if it's a valid `Danmaku` format
+                //     if let Ok(danmaku) = msg.parse::<Danmaku>() {
+                //         match danmaku.valid() {
+                //             Ok(_) => {
+                //                 // send message to chat server
+                //                 self.addr.do_send(messages::ClientMessage {
+                //                     id: self.id,
+                //                     msg,
+                //                     room: self.room.to_owned(),
+                //                 });
+                //             }
+                //             Err(e) => {
+                //                 println!("Err: {}", e);
+                //             }
+                //         }
+                //     } else {
+                //         println!("parse err!");
+                //     };
+                // }
             },
+            /// `Anonymous` will be rejected.
             ws::Message::Text(text) => {
                 let msg = text.trim().to_owned();
                 println!("[{:?}]: message reject (due to not login)", self.identity);

@@ -1,5 +1,10 @@
+//! Define all the message used by actor models.
+
+
+
 use actix::*;
 use crate::actor_models::WsChatSession;
+use crate::actor_models::PayloadType;
 
 /// Message that sent from `ChatServer` to `WsChatSession`,
 /// usually used for broadcast.
@@ -12,8 +17,9 @@ pub struct Message(pub String);
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct ClientMessage {
-    /// id of user that sent this message
+    /// id of user that sent this ssage
     pub id: usize,
+    pub r#type: PayloadType,
     /// message it self
     pub msg: String,
     /// room name.
