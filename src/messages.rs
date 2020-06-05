@@ -1,10 +1,10 @@
 //! Define all the message used by actor models.
 
-
-
-use actix::*;
-use crate::actor_models::WsChatSession;
 use crate::actor_models::PayloadType;
+use crate::actor_models::WsChatSession;
+use actix::*;
+use std::str::FromStr;
+use crate::actor_models::session::Danmaku;
 
 /// Message that sent from `ChatServer` to `WsChatSession`,
 /// usually used for broadcast.
@@ -14,14 +14,13 @@ pub struct Message(pub String);
 
 /// Message that be sent from `WsChatSession` to `ChatServer`,
 /// then it will be broadcast.
-#[derive(Message)]
+
+#[derive(Message, Clone, Debug,)]
 #[rtype(result = "()")]
-pub struct ClientMessage {
-    /// id of user that sent this ssage
+pub struct DanmakuMessage {
+    /// id of user that sent this message
     pub id: usize,
-    pub r#type: PayloadType,
-    /// message it self
-    pub msg: String,
+    pub danmaku: Danmaku,
     /// room name.
     pub room: String,
 }
@@ -31,7 +30,7 @@ pub struct ClientMessage {
 #[rtype(usize)]
 pub struct Connect {
     /// the address of `WsChatSession`.
-    pub addr: Recipient<Message>,
+    pub addr: Recipient<DanmakuMessage>,
     /// the room name.
     pub room: String,
 }
@@ -54,7 +53,7 @@ pub struct Disconnect {
 
 /// Disconnect Signal
 #[derive(Message)]
-#[rtype(result= "()")]
+#[rtype(result = "()")]
 pub struct MonitorDisconnect {
     pub id: usize,
 }

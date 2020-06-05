@@ -5,20 +5,15 @@ use serde::Deserialize;
 use serde_json;
 use std::str::FromStr;
 
-
 /// How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 /// How long before lack of client response cause a timeout
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 
-
-
-
-
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug, Clone)]
 #[allow(dead_code)]
-struct Danmaku {
-    #[serde(skip_deserializing)]
+pub struct Danmaku {
+    #[serde(default)]
     user: String,
     text: String,
     color: u32,
@@ -77,8 +72,8 @@ impl WsChatSession {
 
     fn is_admin(&self) -> bool {
         match self.identity {
-            Identity::Admin(_) =>true,
-            _ => false
+            Identity::Admin(_) => true,
+            _ => false,
         }
     }
 }
@@ -126,10 +121,22 @@ impl Actor for WsChatSession {
     }
 }
 
+impl Handler<messages::DanmakuMessage> for WsChatSession {
+    type Result = ();
+    fn handle(&mut self, msg: messages::DanmakuMessage, ctx: &mut Self::Context) {
+        // convert from DanmakuMessage to
+        println!("[{}] get message from server, send to peer WSSession.", self.id);
+        ctx.text(msg.danmaku.text);
+    }
+}
+
 /// Handle messages from chat server, we simply send it to peer websocket.
 impl Handler<messages::Message> for WsChatSession {
     type Result = ();
     fn handle(&mut self, msg: messages::Message, ctx: &mut Self::Context) {
+        // TODO: from
+
+
         ctx.text(msg.0);
     }
 }
@@ -146,7 +153,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
         };
 
         // TODO: log
-        println!("WEBSOCKET MESSAGE: {:?}", msg);
+        // println!("WEBSOCKET MESSAGE: {:?}", msg);
 
         match msg {
             ws::Message::Ping(msg) => {
@@ -159,6 +166,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
             // Only `Admin` and `User` can send message to server.
             ws::Message::Text(text) if self.is_login() => {
                 let msg = text.trim().to_owned();
+                println!("WEBSOCKET MESSAGE: {:?}", msg);
 
                 // 这里会进行相关处理。
                 // 与 `ChatServer` 的分工不同，
@@ -166,13 +174,43 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 // 比如 `is_login`, 消息类型, 发送频率，是否在黑名单之类的。
                 if let Ok(payload) = msg.parse::<Payload>() {
                     // we can get it's type.
-                    self.addr.do_send(messages::ClientMessage {
-                        id: self.id,
-                        // 为什么要分开，因为这样后面就不需要再 parse 了
-                        r#type: payload.r#type,
-                        msg: payload.data,
-                        room: self.room.to_owned(),
-                    })
+
+                    match payload.r#type {
+                        PayloadType::Danmaku => {
+                            if let Ok(dplayer_danmaku) = payload.data.parse::<Danmaku>() {
+
+                                self.addr.do_send(messages::DanmakuMessage {
+                                    id: self.id,
+                                    // 为什么要分开，因为这样后面就不需要再 parse 了
+                                    danmaku:dplayer_danmaku,
+                                    room: self.room.to_owned(),
+                                })
+                            } else {
+                                // parse error
+                            }
+                        },
+                        PayloadType::PlainDanmakuText => {
+                            self.addr.do_send(messages::DanmakuMessage {
+                                id: self.id,
+                                danmaku: Danmaku {
+                                    user: "".to_string(),
+                                    text: payload.data,
+                                    color: 0,
+                                    r#type: 0
+                                },
+                                room: self.room.to_owned(),
+
+                            })
+                        },
+                    }
+
+                    // self.addr.do_send(messages::DanmakuMessage {
+                    //     id: self.id,
+                    //     // 为什么要分开，因为这样后面就不需要再 parse 了
+                    //     r#type: payload.r#type,
+                    //     msg: payload.data,
+                    //     room: self.room.to_owned(),
+                    // })
                 } else {
                     // throw a parse err!
                     // TODO: it may be a malicious behaviour.
@@ -206,7 +244,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 //         println!("parse err!");
                 //     };
                 // }
-            },
+            }
             /// `Anonymous` will be rejected.
             ws::Message::Text(text) => {
                 let msg = text.trim().to_owned();

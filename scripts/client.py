@@ -8,7 +8,7 @@ import time
 
 
 def on_message(ws, message):
-    print(json.loads(message)['text'])
+    print(message)
 
 
 def on_error(ws, error):
@@ -44,7 +44,7 @@ def on_open(ws):
 
 if __name__ == "__main__":
     websocket.enableTrace(False)
-    ws = websocket.WebSocketApp("ws://danmaku.test.com:8080/ws/",
+    ws = websocket.WebSocketApp("ws://localhost:8080/ws/",
                               on_message=on_message,
                               on_error=on_error,
                               on_close=on_close)
