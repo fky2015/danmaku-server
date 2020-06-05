@@ -4,29 +4,42 @@
 //!
 //!
 
-
 use super::*;
-
+use crate::messages::DanmakuMessage;
 
 impl ChatServer {
-    /// Send message to all users in the room.
-    ///
-    /// # Arguments
-    ///
-    /// * `room`: room name
-    ///
-    /// #
-    fn broadcast_message(&self, room: &str, message: &str, skip_id: usize) {
+
+    fn broadcast_danmaku(&self, room: &str, danmaku: DanmakuMessage,skip_id: usize){
+        println!("broadcast: {:?}", danmaku);
         if let Some(sessions) = self.rooms.get(room) {
             for id in sessions {
                 if *id != skip_id {
                     if let Some(addr) = self.sessions.get(id) {
-                        let _ = addr.do_send(messages::Message(message.to_owned()));
+                        let _ = addr.do_send(danmaku.clone());
                     }
                 }
             }
         }
     }
+
+    // / Send message to all users in the room.
+    // /
+    // / # Arguments
+    // /
+    // / * `room`: room name
+    // /
+    // / #
+    // fn broadcast_message(&self, room: &str, message: &str, skip_id: usize) {
+    //     if let Some(sessions) = self.rooms.get(room) {
+    //         for id in sessions {
+    //             if *id != skip_id {
+    //                 if let Some(addr) = self.sessions.get(id) {
+    //                     let _ = addr.do_send(messages::Message(message.to_owned()));
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
     // todo: broadcast monitor message
 
     // todo: hb to send monitor data
@@ -50,21 +63,23 @@ impl Actor for ChatServer {
     type Context = Context<Self>;
 }
 
-
-impl Handler<messages::ClientMessage> for ChatServer {
+impl Handler<messages::DanmakuMessage> for ChatServer {
     type Result = ();
 
-    fn handle(&mut self, msg: messages::ClientMessage, _: &mut Self::Context) {
+    fn handle(&mut self, danmaku: messages::DanmakuMessage, _: &mut Self::Context) {
         // do some checks before broadcast.
         // 根据 msg 本身进行过滤。
-        let data = msg.msg.to_owned();
+        // let data = msg.ned();
         // TODO: currently working on.
-        // if let Ok(danmaku) = data.parse::<Danmaku>() {
-        //
-        // }
-
-        self.broadcast_message(&msg.room, &msg.msg, msg.id);
+        // TODO: do the check
+        let skip_id = danmaku.id;
+        let room = danmaku.room.to_owned();
+        self.broadcast_danmaku(&room, danmaku, skip_id);
     }
+}
+
+trait TempTest {
+
 }
 
 impl Handler<messages::Connect> for ChatServer {
@@ -75,7 +90,7 @@ impl Handler<messages::Connect> for ChatServer {
         println!("someone joined");
 
         // notify all users in same room
-        self.broadcast_message(&msg.room, "Someone joined", 0);
+        // self.broadcast_message(&msg.room, "Someone joined", 0);
 
         // register session with random id
         let id = self.rng.gen::<usize>();

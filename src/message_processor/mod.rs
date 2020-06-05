@@ -1,5 +1,3 @@
-
 trait MessageProcessor {
-    fn process(msg: String) -> Result<String,String>;
+    fn process(msg: String) -> Result<String, String>;
 }
-

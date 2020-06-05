@@ -1,6 +1,6 @@
 //! Implement server logic, unrelated to actor.
 
-use oauth2::{PkceCodeVerifier, CsrfToken};
+use oauth2::{CsrfToken, PkceCodeVerifier};
 use std::collections::HashMap;
 
 use crate::err2internal_err;
@@ -28,8 +28,7 @@ impl FromStr for UserInfo {
 
 pub struct UserData {
     pub credentials: Option<
-    (PkceCodeVerifier, CsrfToken)
-        // Client<BasicErrorResponse, BasicTokenResponse, BasicTokenType>,
+        (PkceCodeVerifier, CsrfToken), // Client<BasicErrorResponse, BasicTokenResponse, BasicTokenType>,
     >,
     pub user_info: Option<UserInfo>,
 }
@@ -60,7 +59,8 @@ impl SessionMap {
 
     pub fn get_user_info(&self, id: &str) -> Option<UserInfo> {
         let session_map = self.user_data.lock().unwrap();
-        session_map.get(id)
+        session_map
+            .get(id)
             .map(|user_data| user_data.user_info.clone())
             .flatten()
     }

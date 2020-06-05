@@ -12,14 +12,14 @@ use rand::rngs::ThreadRng;
 use rand::Rng;
 
 use actix::*;
-use std::time::{Duration, Instant};
-use std::str::FromStr;
 use serde::Deserialize;
+use std::str::FromStr;
+use std::time::{Duration, Instant};
 
 /// `ChatServer` handle all the connections, messages and disconnections.
 /// There is only one ChatServer at a time.
 pub struct ChatServer {
-    pub sessions: HashMap<usize, Recipient<messages::Message>>,
+    pub sessions: HashMap<usize, Recipient<messages::DanmakuMessage>>,
     pub rooms: HashMap<String, HashSet<usize>>,
     pub rng: ThreadRng,
     // pub monitors: HashMap<usize, Context<WsChatSession>>,
@@ -59,7 +59,6 @@ pub enum PayloadType {
     PlainDanmakuText,
 }
 
-
 /// Payload itself.
 #[derive(Deserialize, Debug)]
 struct Payload {
@@ -74,7 +73,6 @@ impl FromStr for Payload {
         serde_json::from_str(s).map_err(|_| ())
     }
 }
-
 
 pub mod server;
 
