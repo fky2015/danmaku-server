@@ -1,10 +1,8 @@
 //! Define all the message used by actor models.
 
 use crate::actor_models::session::Danmaku;
-use crate::actor_models::PayloadType;
 use crate::actor_models::WsChatSession;
 use actix::*;
-use std::str::FromStr;
 
 /// Message that sent from `ChatServer` to `WsChatSession`,
 /// usually used for broadcast.
