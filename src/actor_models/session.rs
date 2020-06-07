@@ -2,7 +2,6 @@
 
 use super::*;
 use serde::Deserialize;
-use serde_json;
 use std::str::FromStr;
 
 /// How often heartbeat pings are sent
@@ -252,7 +251,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 //     };
                 // }
             }
-            /// `Anonymous` will be rejected.
+            // `Anonymous` will be rejected.
             ws::Message::Text(text) => {
                 let msg = text.trim().to_owned();
                 println!("[{:?}]: message reject (due to not login)", self.identity);
