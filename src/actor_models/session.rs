@@ -14,10 +14,10 @@ const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 #[allow(dead_code)]
 pub struct Danmaku {
     #[serde(default)]
-    user: String,
-    text: String,
-    color: u32,
-    r#type: u8,
+    pub user: String,
+    pub text: String,
+    pub color: u32,
+    pub r#type: u8,
 }
 
 impl FromStr for Danmaku {
@@ -125,7 +125,10 @@ impl Handler<messages::DanmakuMessage> for WsChatSession {
     type Result = ();
     fn handle(&mut self, msg: messages::DanmakuMessage, ctx: &mut Self::Context) {
         // convert from DanmakuMessage to
-        println!("[{}] get message from server, send to peer WSSession.", self.id);
+        println!(
+            "[{}] get message from server, send to peer WSSession.",
+            self.id
+        );
         ctx.text(msg.danmaku.text);
     }
 }
@@ -135,7 +138,6 @@ impl Handler<messages::Message> for WsChatSession {
     type Result = ();
     fn handle(&mut self, msg: messages::Message, ctx: &mut Self::Context) {
         // TODO: from
-
 
         ctx.text(msg.0);
     }
@@ -178,17 +180,23 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                     match payload.r#type {
                         PayloadType::Danmaku => {
                             if let Ok(dplayer_danmaku) = payload.data.parse::<Danmaku>() {
-
-                                self.addr.do_send(messages::DanmakuMessage {
-                                    id: self.id,
-                                    // 为什么要分开，因为这样后面就不需要再 parse 了
-                                    danmaku:dplayer_danmaku,
-                                    room: self.room.to_owned(),
-                                })
+                                // process
+                                if let Ok(valid_danmaku) =
+                                    self.message_processor.process(dplayer_danmaku)
+                                {
+                                    self.addr.do_send(messages::DanmakuMessage {
+                                        id: self.id,
+                                        // 为什么要分开，因为这样后面就不需要再 parse 了
+                                        danmaku: valid_danmaku,
+                                        room: self.room.to_owned(),
+                                    })
+                                } else {
+                                    // else not valid
+                                }
                             } else {
                                 // parse error
                             }
-                        },
+                        }
                         PayloadType::PlainDanmakuText => {
                             self.addr.do_send(messages::DanmakuMessage {
                                 id: self.id,
@@ -196,21 +204,20 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                                     user: "".to_string(),
                                     text: payload.data,
                                     color: 0,
-                                    r#type: 0
+                                    r#type: 0,
                                 },
                                 room: self.room.to_owned(),
-
                             })
-                        },
+                        }
                     }
 
-                    // self.addr.do_send(messages::DanmakuMessage {
-                    //     id: self.id,
-                    //     // 为什么要分开，因为这样后面就不需要再 parse 了
-                    //     r#type: payload.r#type,
-                    //     msg: payload.data,
-                    //     room: self.room.to_owned(),
-                    // })
+                // self.addr.do_send(messages::DanmakuMessage {
+                //     id: self.id,
+                //     // 为什么要分开，因为这样后面就不需要再 parse 了
+                //     r#type: payload.r#type,
+                //     msg: payload.data,
+                //     room: self.room.to_owned(),
+                // })
                 } else {
                     // throw a parse err!
                     // TODO: it may be a malicious behaviour.

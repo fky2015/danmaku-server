@@ -80,6 +80,7 @@ async fn chat_route(
             room: "Test".into(),
             identity,
             addr: srv.get_ref().clone(),
+            message_processor: message_processor::MessageProcessor {}
         },
         &req,
         stream,

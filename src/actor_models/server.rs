@@ -8,8 +8,7 @@ use super::*;
 use crate::messages::DanmakuMessage;
 
 impl ChatServer {
-
-    fn broadcast_danmaku(&self, room: &str, danmaku: DanmakuMessage,skip_id: usize){
+    fn broadcast_danmaku(&self, room: &str, danmaku: DanmakuMessage, skip_id: usize) {
         println!("broadcast: {:?}", danmaku);
         if let Some(sessions) = self.rooms.get(room) {
             for id in sessions {
@@ -78,9 +77,7 @@ impl Handler<messages::DanmakuMessage> for ChatServer {
     }
 }
 
-trait TempTest {
-
-}
+trait TempTest {}
 
 impl Handler<messages::Connect> for ChatServer {
     /// id
