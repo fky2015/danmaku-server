@@ -28,6 +28,8 @@ impl FromStr for Danmaku {
 }
 
 impl Danmaku {
+    // TODO 合并 message processor 到这里
+    #[allow(dead_code)]
     fn valid(&self) -> Result<(), &str> {
         // text length check
         if self.text.len() > 30 {
@@ -69,6 +71,7 @@ impl WsChatSession {
         self.identity != Identity::Anonymous
     }
 
+    #[allow(dead_code)]
     fn is_admin(&self) -> bool {
         match self.identity {
             Identity::Admin(_) => true,
