@@ -15,6 +15,7 @@ use actix::*;
 use serde::Deserialize;
 use std::str::FromStr;
 use std::time::{Duration, Instant};
+use crate::message_processor::MessageProcessor;
 
 /// `ChatServer` handle all the connections, messages and disconnections.
 /// There is only one ChatServer at a time.
@@ -37,6 +38,8 @@ pub enum Identity {
     Admin(String),
 }
 
+
+
 /// A `WsChatSession` is a map of websocket in server (normally, it means one user).
 pub struct WsChatSession {
     /// unique session id
@@ -50,6 +53,7 @@ pub struct WsChatSession {
     pub identity: Identity,
     /// chat server address
     pub addr: Addr<ChatServer>,
+    pub message_processor: MessageProcessor,
 }
 
 /// Payload type.

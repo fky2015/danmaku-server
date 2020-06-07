@@ -1,10 +1,10 @@
 //! Define all the message used by actor models.
 
+use crate::actor_models::session::Danmaku;
 use crate::actor_models::PayloadType;
 use crate::actor_models::WsChatSession;
 use actix::*;
 use std::str::FromStr;
-use crate::actor_models::session::Danmaku;
 
 /// Message that sent from `ChatServer` to `WsChatSession`,
 /// usually used for broadcast.
@@ -15,7 +15,7 @@ pub struct Message(pub String);
 /// Message that be sent from `WsChatSession` to `ChatServer`,
 /// then it will be broadcast.
 
-#[derive(Message, Clone, Debug,)]
+#[derive(Message, Clone, Debug)]
 #[rtype(result = "()")]
 pub struct DanmakuMessage {
     /// id of user that sent this message
