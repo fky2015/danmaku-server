@@ -253,8 +253,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
             }
             // `Anonymous` will be rejected.
             ws::Message::Text(text) => {
+                // TODO logger
                 let msg = text.trim().to_owned();
-                println!("[{:?}]: message reject (due to not login)", self.identity);
+                println!(
+                    "[{:?}]: message [{}] reject (due to not login)",
+                    self.identity, msg
+                );
             }
             ws::Message::Binary(_) => println!("Unexpected binary"),
             ws::Message::Close(_) => {
@@ -264,7 +268,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 ctx.stop();
             }
             ws::Message::Nop => (),
-            _ => (),
         }
     }
 }
