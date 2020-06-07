@@ -11,11 +11,11 @@ use actix_web_actors::ws;
 use rand::rngs::ThreadRng;
 use rand::Rng;
 
+use crate::message_processor::MessageProcessor;
 use actix::*;
 use serde::Deserialize;
 use std::str::FromStr;
 use std::time::{Duration, Instant};
-use crate::message_processor::MessageProcessor;
 
 /// `ChatServer` handle all the connections, messages and disconnections.
 /// There is only one ChatServer at a time.
@@ -37,8 +37,6 @@ pub enum Identity {
     /// or receive statistic status.
     Admin(String),
 }
-
-
 
 /// A `WsChatSession` is a map of websocket in server (normally, it means one user).
 pub struct WsChatSession {
