@@ -1,0 +1,23 @@
+on:
+  push:
+    branch:
+      - 'e2etest'
+  pull_request:
+    branch:
+      - 'e2etest'
+
+name: Remote SSH Command for E2ETEST
+jobs:
+  update-docker-compose:
+    name: Update E2ETEST's Docker Compose
+    runs-on: ubuntu-latest
+    steps:
+      - name: executing remote ssh commands using password
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          script: |
+            whoami
+            ls -alR
