@@ -28,6 +28,8 @@ impl FromStr for Danmaku {
 }
 
 impl Danmaku {
+    // TODO 合并 message processor 到这里
+    #[allow(dead_code)]
     fn valid(&self) -> Result<(), &str> {
         // text length check
         if self.text.len() > 30 {
@@ -69,6 +71,7 @@ impl WsChatSession {
         self.identity != Identity::Anonymous
     }
 
+    #[allow(dead_code)]
     fn is_admin(&self) -> bool {
         match self.identity {
             Identity::Admin(_) => true,
@@ -253,8 +256,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
             }
             // `Anonymous` will be rejected.
             ws::Message::Text(text) => {
+                // TODO logger
                 let msg = text.trim().to_owned();
-                println!("[{:?}]: message reject (due to not login)", self.identity);
+                println!(
+                    "[{:?}]: message [{}] reject (due to not login)",
+                    self.identity, msg
+                );
             }
             ws::Message::Binary(_) => println!("Unexpected binary"),
             ws::Message::Close(_) => {
@@ -264,7 +271,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 ctx.stop();
             }
             ws::Message::Nop => (),
-            _ => (),
         }
     }
 }

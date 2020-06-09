@@ -1,7 +1,6 @@
 //! Define all the message used by actor models.
 
 use crate::actor_models::session::Danmaku;
-use crate::actor_models::WsChatSession;
 use actix::*;
 
 /// Message that sent from `ChatServer` to `WsChatSession`,
@@ -33,13 +32,13 @@ pub struct Connect {
     pub room: String,
 }
 
-/// Connect Signal for Monitor
-#[derive(Message)]
-#[rtype(usize)]
-pub struct MonitorConnect {
-    /// the address of `WsChatSession`.
-    pub addr: Addr<WsChatSession>,
-}
+// /// Connect Signal for Monitor
+// #[derive(Message)]
+// #[rtype(usize)]
+// pub struct MonitorConnect {
+//     /// the address of `WsChatSession`.
+//     pub addr: Addr<WsChatSession>,
+// }
 
 /// Disconnect Signal
 #[derive(Message)]
@@ -49,9 +48,9 @@ pub struct Disconnect {
     pub room: String,
 }
 
-/// Disconnect Signal
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct MonitorDisconnect {
-    pub id: usize,
-}
+// /// Disconnect Signal
+// #[derive(Message)]
+// #[rtype(result = "()")]
+// pub struct MonitorDisconnect {
+//     pub id: usize,
+// }
