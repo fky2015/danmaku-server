@@ -6,7 +6,8 @@
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 -->
-  <h3 align="center">Danmaku Server</h3>
+  <h3 align="center">Danmaku Server <span style="color: #f14e71;font-style: oblique;">(Still Under Development)</span></h3>
+ 
   
 [![Status][status-badge]][status-url]
 [![Contributors][contributors-shield]][contributors-url]
@@ -16,7 +17,7 @@
 [![Docker Image Size][docker-image-size-badge]][docker-image-size-url]
 [![MIT License][license-badge]][license-url]
 
-A [DPlayer](dplayer-url) Compatible Danmaku Server built with actix-web.
+A [DPlayer][dplayer-url] Compatible Danmaku Server built with [actix-web][actix-web-url].
     
 <!--
 <br />
@@ -37,9 +38,7 @@ A [DPlayer](dplayer-url) Compatible Danmaku Server built with actix-web.
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Danmaku Server aimed to be a B
-
-a danmaku server based on [Actix-web][actix-web-url],
+Danmaku Server aimed to be a danmaku server based on [Actix-web][actix-web-url],
 compatible with [DPlayer][dplayer-url].
 
 ### Feature
@@ -58,7 +57,12 @@ To get a local copy up and running follow these simple steps.
 
 ### Prerequisites
 
-Nightly built Rust.
+|version | building status|
+|:---: | :---:|
+|MSRV 1.40| [![](https://github.com/fky2015/danmaku-server/workflows/CI%20for%20MSRV/badge.svg)](https://github.com/fky2015/danmaku-server/actions?query=workflow%3A%22CI+for+MSRV%22)|
+|stable| [![](https://github.com/fky2015/danmaku-server/workflows/CI%20for%20STABLE/badge.svg)](https://github.com/fky2015/danmaku-server/actions?query=workflow%3A%22CI+for+STABLE%22)|
+|beta| [![](https://github.com/fky2015/danmaku-server/workflows/CI%20for%20BETA/badge.svg)](https://github.com/fky2015/danmaku-server/actions?query=workflow%3A%22CI+for+BETA%22)|
+|nightly| [![](https://github.com/fky2015/danmaku-server/workflows/CI%20for%20NIGHTLY/badge.svg)](https://github.com/fky2015/danmaku-server/actions?query=workflow%3A%22CI+for+NIGHTLY%22)|
 
 ### Installation
  
@@ -152,7 +156,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 FKYnJYQ - [🐦twitter](https://twitter.com/FKYnJYQ) - loveress01@outlook.com
 
-Project Link: [https://github.com/github_username/repo](https://github.com/fky2015/danmaku-server)
+Project Link: [github.com/fky2015/danmaku-server](https://github.com/fky2015/danmaku-server)
 
 
 <!-- ACKNOWLEDGEMENTS
@@ -178,7 +182,8 @@ Project Link: [https://github.com/github_username/repo](https://github.com/fky20
 [issues-url]: https://github.com/fky2015/danmaku-server/issues
 [license-badge]: https://flat.badgen.net/github/license/fky2015/danmaku-server?color=purple
 [license-url]: https://github.com/fky2015/danmaku-server/blob/master/LICENSE.txt
-[status-badge]: https://flat.badgen.net/github/status/fky2015/danmaku-server
+[status-badge]: https://flat.badgen.net/github/checks/fky2015/danmaku-server/
+<!--[status-badge]: https://github.com/fky2015/danmaku-server/workflows/CI%20for%20STABLE/badge.svg -->
 [status-url]: https://github.com/fky2015/danmaku-server
 [docker-image-size-badge]: https://badgen.net/docker/size/fkynjyq/danmaku-server?color=green
 [docker-image-size-url]: https://hub.docker.com/repository/docker/fkynjyq/danmaku-server
