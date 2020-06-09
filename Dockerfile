@@ -4,7 +4,7 @@ COPY . .
 RUN cargo install --path . --verbose
 
 FROM debian:buster-slim
-#RUN apt-get update && apt-get install -y extra-runtime-dependencies
+RUN apt-get update && apt-get install -y openssl
 COPY --from=builder /usr/local/cargo/bin/danmaku-server /usr/local/bin/danmaku-server
 EXPOSE 8080
 CMD ["danmaku-server"]
