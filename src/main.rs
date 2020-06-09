@@ -256,7 +256,10 @@ struct Config {
 /// then
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    dotenv::dotenv().unwrap();
+    if cfg!(not(feature = "docker")) {
+        dotenv::dotenv().unwrap();
+        println!("you should see me when target is not docker!");
+    }
 
     let config = match envy::from_env::<Config>() {
         Ok(c) => {
