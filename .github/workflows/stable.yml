@@ -1,4 +1,10 @@
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+      - 'e2etest'
+  pull_request:
+    branches-ignore:
+      - 'e2etest'
 
 name: CI for STABLE
 
