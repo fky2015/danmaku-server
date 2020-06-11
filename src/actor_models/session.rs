@@ -1,31 +1,12 @@
 //! Implement behaviour of `WsChatSession`.
 
 use super::*;
-use serde::Deserialize;
 use std::str::FromStr;
 
 /// How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 /// How long before lack of client response cause a timeout
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
-
-#[derive(Deserialize, Debug, Clone)]
-#[allow(dead_code)]
-pub struct Danmaku {
-    #[serde(default)]
-    pub user: String,
-    pub text: String,
-    pub color: u32,
-    pub r#type: u8,
-}
-
-impl FromStr for Danmaku {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str(s).map_err(|_| ())
-    }
-}
 
 impl Danmaku {
     // TODO 合并 message processor 到这里
@@ -52,7 +33,7 @@ impl WsChatSession {
                 println!("Websocket Client heartbeat failed, disconnecting");
 
                 // notify ChatServer
-                act.addr.do_send(messages::Disconnect {
+                act.addr.do_send(Disconnect {
                     id: act.id,
                     room: act.room.to_owned(),
                 });
@@ -96,7 +77,7 @@ impl Actor for WsChatSession {
         let addr = ctx.address();
         println!("{:?} try to join in", self.identity);
         self.addr
-            .send(messages::Connect {
+            .send(Connect {
                 addr: addr.recipient(),
                 room: self.room.to_owned(),
             })
@@ -115,7 +96,7 @@ impl Actor for WsChatSession {
     fn stopping(&mut self, _: &mut Self::Context) -> Running {
         // todo: monitor disconnect.
         // notify chat server
-        self.addr.do_send(messages::Disconnect {
+        self.addr.do_send(Disconnect {
             id: self.id,
             room: self.room.to_owned(),
         });
@@ -123,9 +104,9 @@ impl Actor for WsChatSession {
     }
 }
 
-impl Handler<messages::DanmakuMessage> for WsChatSession {
+impl Handler<DanmakuMessage> for WsChatSession {
     type Result = ();
-    fn handle(&mut self, msg: messages::DanmakuMessage, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: DanmakuMessage, ctx: &mut Self::Context) {
         // convert from DanmakuMessage to
         println!(
             "[{}] get message from server, send to peer WSSession.",
@@ -136,12 +117,11 @@ impl Handler<messages::DanmakuMessage> for WsChatSession {
 }
 
 /// Handle messages from chat server, we simply send it to peer websocket.
-impl Handler<messages::Message> for WsChatSession {
+impl Handler<ServerMessage> for WsChatSession {
     type Result = ();
-    fn handle(&mut self, msg: messages::Message, ctx: &mut Self::Context) {
-        // TODO: from
-
-        ctx.text(msg.0);
+    fn handle(&mut self, msg: ServerMessage, ctx: &mut Self::Context) {
+        let serialized = serde_json::to_string(&msg).unwrap();
+        ctx.text(serialized);
     }
 }
 
@@ -176,50 +156,66 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 // 与 `ChatServer` 的分工不同，
                 // 这里处理的依据是 `payload.data` 以外的部分。
                 // 比如 `is_login`, 消息类型, 发送频率，是否在黑名单之类的。
-                if let Ok(payload) = msg.parse::<Payload>() {
+                if let Ok(client_message) = msg.parse::<ClientMessage>() {
                     // we can get it's type.
-
-                    match payload.r#type {
-                        PayloadType::Danmaku => {
-                            if let Ok(dplayer_danmaku) = payload.data.parse::<Danmaku>() {
-                                // process
-                                if let Ok(valid_danmaku) =
-                                    self.message_processor.process(dplayer_danmaku)
-                                {
-                                    self.addr.do_send(messages::DanmakuMessage {
-                                        id: self.id,
-                                        // 为什么要分开，因为这样后面就不需要再 parse 了
-                                        danmaku: valid_danmaku,
-                                        room: self.room.to_owned(),
-                                    })
-                                } else {
-                                    // else not valid
-                                }
+                    match client_message {
+                        // PayloadType::Danmaku => {
+                        //     if let Ok(dplayer_danmaku) = payload.data.parse::<Danmaku>() {
+                        //         // process
+                        //         if let Ok(valid_danmaku) =
+                        //             self.message_processor.process(dplayer_danmaku)
+                        //         {
+                        //             self.addr.do_send(DanmakuMessage {
+                        //                 id: self.id,
+                        //                 // 为什么要分开，因为这样后面就不需要再 parse 了
+                        //                 danmaku: valid_danmaku,
+                        //                 room: self.room.to_owned(),
+                        //             })
+                        //         } else {
+                        //             // else not valid
+                        //         }
+                        //     } else {
+                        //         // parse error
+                        //     }
+                        // }
+                        // PayloadType::PlainDanmakuText => self.addr.do_send(DanmakuMessage {
+                        //     id: self.id,
+                        //     danmaku: Danmaku {
+                        //         user: "".to_string(),
+                        //         text: payload.data,
+                        //         color: 0,
+                        //         r#type: 0,
+                        //     },
+                        //     room: self.room.to_owned(),
+                        // }),
+                        ClientMessage::Danmaku(danmaku) => {
+                            if let Ok(valid_danmaku) = self.message_processor.process(danmaku) {
+                                self.addr.do_send(DanmakuMessage {
+                                    id: self.id,
+                                    // 为什么要分开，因为这样后面就不需要再 parse 了
+                                    danmaku: valid_danmaku,
+                                    room: self.room.to_owned(),
+                                })
                             } else {
-                                // parse error
+                                // else not valid
                             }
                         }
-                        PayloadType::PlainDanmakuText => {
-                            self.addr.do_send(messages::DanmakuMessage {
-                                id: self.id,
-                                danmaku: Danmaku {
-                                    user: "".to_string(),
-                                    text: payload.data,
-                                    color: 0,
-                                    r#type: 0,
-                                },
-                                room: self.room.to_owned(),
-                            })
+                        ClientMessage::PlainText(text) => {
+                            if let Ok(valid_danmaku) = self
+                                .message_processor
+                                .process(Danmaku::from_str(&text).unwrap())
+                            {
+                                self.addr.do_send(DanmakuMessage {
+                                    id: self.id,
+                                    // 为什么要分开，因为这样后面就不需要再 parse 了
+                                    danmaku: valid_danmaku,
+                                    room: self.room.to_owned(),
+                                })
+                            } else {
+                                // else not valid
+                            }
                         }
                     }
-
-                // self.addr.do_send(messages::DanmakuMessage {
-                //     id: self.id,
-                //     // 为什么要分开，因为这样后面就不需要再 parse 了
-                //     r#type: payload.r#type,
-                //     msg: payload.data,
-                //     room: self.room.to_owned(),
-                // })
                 } else {
                     // throw a parse err!
                     // TODO: it may be a malicious behaviour.

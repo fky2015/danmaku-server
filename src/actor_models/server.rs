@@ -5,16 +5,15 @@
 //!
 
 use super::*;
-use crate::messages::DanmakuMessage;
 
 impl ChatServer {
-    fn broadcast_danmaku(&self, room: &str, danmaku: DanmakuMessage, skip_id: usize) {
-        println!("broadcast: {:?}", danmaku);
+    fn broadcast(&self, room: &str, server_message: ServerMessage, skip_id: usize) {
+        println!("broadcast: {:?}", server_message);
         if let Some(sessions) = self.rooms.get(room) {
             for id in sessions {
                 if *id != skip_id {
                     if let Some(addr) = self.sessions.get(id) {
-                        let _ = addr.do_send(danmaku.clone());
+                        let _ = addr.do_send(server_message.clone());
                     }
                 }
             }
@@ -33,7 +32,7 @@ impl ChatServer {
     //         for id in sessions {
     //             if *id != skip_id {
     //                 if let Some(addr) = self.sessions.get(id) {
-    //                     let _ = addr.do_send(messages::Message(message.to_owned()));
+    //                     let _ = addr.do_send(Message(message.to_owned()));
     //                 }
     //             }
     //         }
@@ -62,28 +61,28 @@ impl Actor for ChatServer {
     type Context = Context<Self>;
 }
 
-impl Handler<messages::DanmakuMessage> for ChatServer {
+impl Handler<DanmakuMessage> for ChatServer {
     type Result = ();
 
-    fn handle(&mut self, danmaku: messages::DanmakuMessage, _: &mut Self::Context) {
+    fn handle(&mut self, danmaku: DanmakuMessage, _: &mut Self::Context) {
         // do some checks before broadcast.
         // 根据 msg 本身进行过滤。
         // let data = msg.ned();
-        // TODO: currently working on.
-        // TODO: do the check
+        // TODO: log
+
         let skip_id = danmaku.id;
         let room = danmaku.room.to_owned();
-        self.broadcast_danmaku(&room, danmaku, skip_id);
+        self.broadcast(&room, ServerMessage::from(danmaku), skip_id);
     }
 }
 
 trait TempTest {}
 
-impl Handler<messages::Connect> for ChatServer {
+impl Handler<Connect> for ChatServer {
     /// id
     type Result = usize;
 
-    fn handle(&mut self, msg: messages::Connect, _: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
         println!("someone joined");
 
         // notify all users in same room
@@ -94,19 +93,21 @@ impl Handler<messages::Connect> for ChatServer {
         self.sessions.insert(id, msg.addr);
 
         // join session
-        let s = self.rooms.entry(msg.room).or_default();
+        let s = self.rooms.entry(msg.room.to_owned()).or_default();
         s.insert(id);
+        let room_size = s.len();
 
+        self.broadcast(&msg.room, ServerMessage::StatisticInfo(room_size), 0);
         // send new id back
         id
     }
 }
 
 /// Handler for Disconnect message.
-impl Handler<messages::Disconnect> for ChatServer {
+impl Handler<Disconnect> for ChatServer {
     type Result = ();
 
-    fn handle(&mut self, msg: messages::Disconnect, _: &mut Self::Context) {
+    fn handle(&mut self, msg: Disconnect, _: &mut Self::Context) {
         println!("Someone disconnect");
 
         // remove address
@@ -114,6 +115,11 @@ impl Handler<messages::Disconnect> for ChatServer {
 
         // remove room info
         // free memory when no one left in room.
-        self.rooms.get_mut(&msg.room).unwrap().remove(&msg.id);
+        let room = self.rooms.get_mut(&msg.room).unwrap();
+        room.remove(&msg.id);
+
+        // broadcast
+        let room_size = room.len();
+        self.broadcast(&msg.room, ServerMessage::StatisticInfo(room_size), 0);
     }
 }

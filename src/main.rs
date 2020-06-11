@@ -17,8 +17,6 @@ use oauth2::{
 use uuid::Uuid;
 
 mod actor_models;
-mod messages;
-
 use actor_models::{ChatServer, WsChatSession};
 
 use actix_files::NamedFile;
