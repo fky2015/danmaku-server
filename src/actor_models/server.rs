@@ -5,10 +5,11 @@
 //!
 
 use super::*;
+use log::info;
 
 impl ChatServer {
     fn broadcast(&self, room: &str, server_message: ServerMessage, skip_id: usize) {
-        println!("broadcast: {:?}", server_message);
+        info!("broadcast: {:?}", server_message);
         if let Some(sessions) = self.rooms.get(room) {
             for id in sessions {
                 if *id != skip_id {
@@ -83,7 +84,7 @@ impl Handler<Connect> for ChatServer {
     type Result = usize;
 
     fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
-        println!("someone joined");
+        info!("someone joined");
 
         // notify all users in same room
         // self.broadcast_message(&msg.room, "Someone joined", 0);
@@ -108,7 +109,7 @@ impl Handler<Disconnect> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: Disconnect, _: &mut Self::Context) {
-        println!("Someone disconnect");
+        info!("Someone disconnect");
 
         // remove address
         self.sessions.remove(&msg.id);

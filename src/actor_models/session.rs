@@ -1,6 +1,7 @@
 //! Implement behaviour of `WsChatSession`.
 
 use super::*;
+use log::{info, warn};
 use std::str::FromStr;
 
 /// How often heartbeat pings are sent
@@ -30,7 +31,7 @@ impl WsChatSession {
             // check client heartbeats
             if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
                 // heartbeat timed out
-                println!("Websocket Client heartbeat failed, disconnecting");
+                warn!("Websocket Client heartbeat failed, disconnecting");
 
                 // notify ChatServer
                 act.addr.do_send(Disconnect {
@@ -75,7 +76,7 @@ impl Actor for WsChatSession {
         // HttpContext::state() is instance of WsChatSessionState, state is shared
         // across all routes within application
         let addr = ctx.address();
-        println!("{:?} try to join in", self.identity);
+        info!("{:?} try to join in", self.identity);
         self.addr
             .send(Connect {
                 addr: addr.recipient(),
@@ -153,7 +154,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
             // Only `Admin` and `User` can send message to server.
             ws::Message::Text(text) if self.is_login() => {
                 let msg = text.trim().to_owned();
-                println!("WEBSOCKET MESSAGE: {:?}", msg);
+                info!("WEBSOCKET MESSAGE: {:?}", msg);
 
                 // 这里会进行相关处理。
                 // 与 `ChatServer` 的分工不同，
@@ -222,7 +223,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 } else {
                     // throw a parse err!
                     // TODO: it may be a malicious behaviour.
-                    println!("parse err!");
+                    warn!("parse err!");
                 }
 
                 // println!("[{:?}]: {}", self.identity, msg);
@@ -235,12 +236,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
             ws::Message::Text(text) => {
                 // TODO logger
                 let msg = text.trim().to_owned();
-                println!(
+                warn!(
                     "[{:?}]: message [{}] reject (due to not login)",
                     self.identity, msg
                 );
             }
-            ws::Message::Binary(_) => println!("Unexpected binary"),
+            ws::Message::Binary(_) => warn!("Unexpected binary"),
             ws::Message::Close(_) => {
                 ctx.stop();
             }
