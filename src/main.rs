@@ -16,9 +16,11 @@ use oauth2::{
 };
 use uuid::Uuid;
 
-mod actor_models;
-mod messages;
+use env_logger::Env;
+use log::debug;
+use log::info;
 
+mod actor_models;
 use actor_models::{ChatServer, WsChatSession};
 
 use actix_files::NamedFile;
@@ -47,7 +49,7 @@ async fn chat_route(
     web::Query(auth): web::Query<Auth>,
     server_sessions: web::Data<session_models::SessionMap>,
 ) -> Result<HttpResponse, Error> {
-    println!("{:?}", req);
+    debug!("{:?}", req);
 
     let identity = if auth.secret_key.is_some() {
         // will be first login as higher priority.
@@ -117,7 +119,7 @@ async fn oidc_redirected(
     server_session: web::Data<session_models::SessionMap>,
     client: web::Data<Client<BasicErrorResponse, BasicTokenResponse, BasicTokenType>>,
 ) -> Result<HttpResponse, Error> {
-    println!("{:?}", req);
+    debug!("{:?}", req);
     // let uuid = session.get::<String>("uuid").unwrap().unwrap();
     if let Some(uuid) = id.identity() {
         // better err handling
@@ -174,7 +176,7 @@ async fn login(
     server_session: web::Data<session_models::SessionMap>,
     client: web::Data<Client<BasicErrorResponse, BasicTokenResponse, BasicTokenType>>,
 ) -> Result<HttpResponse, Error> {
-    println!("{:?}", req);
+    debug!("{:?}", req);
 
     if let Some(id) = id.identity() {
         // has already login, redirect to index page.
@@ -256,18 +258,20 @@ struct Config {
 /// then
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::from_env(Env::default().default_filter_or("info")).init();
+
     if cfg!(not(feature = "docker")) {
         dotenv::dotenv().unwrap();
-        println!("you should see me when target is not docker!");
+        debug!("you should see me when target is not docker!");
     }
 
     let config = match envy::from_env::<Config>() {
         Ok(c) => {
-            println!("{:#?}", c);
+            debug!("{:#?}", c);
             c
         }
         Err(err) => {
-            println!("env error: {:#?}", err);
+            debug!("env error: {:#?}", err);
             exit(1);
         }
     };
@@ -298,12 +302,13 @@ async fn main() -> std::io::Result<()> {
 
     let client = web::Data::new(client);
 
-    env_logger::init();
+    // env_logger::init();
 
     // Start chat server actor
     let server = ChatServer::default().start();
     let session_map = web::Data::new(session_models::SessionMap::default());
 
+    info!("start at http://{}:{}", config.address, config.port);
     // Create Http server with websocket support
     HttpServer::new(move || {
         App::new()

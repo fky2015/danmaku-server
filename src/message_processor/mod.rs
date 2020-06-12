@@ -1,4 +1,4 @@
-use crate::actor_models::session::Danmaku;
+use crate::actor_models::Danmaku;
 
 #[derive(Default, Debug)]
 pub struct MessageProcessor {}

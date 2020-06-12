@@ -4,38 +4,26 @@
 //!
 //! Two main actor model is [`ChatServer`] and [`WsChatSession`].
 
-use std::collections::{HashMap, HashSet};
-
-use crate::messages;
 use actix_web_actors::ws;
 use rand::rngs::ThreadRng;
 use rand::Rng;
+use std::collections::{HashMap, HashSet};
 
 use crate::message_processor::MessageProcessor;
 use actix::*;
-use serde::Deserialize;
+use failure::_core::fmt::Formatter;
+use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::str::FromStr;
 use std::time::{Duration, Instant};
 
 /// `ChatServer` handle all the connections, messages and disconnections.
 /// There is only one ChatServer at a time.
 pub struct ChatServer {
-    pub sessions: HashMap<usize, Recipient<messages::DanmakuMessage>>,
+    pub sessions: HashMap<usize, Recipient<ServerMessage>>,
     pub rooms: HashMap<String, HashSet<usize>>,
     pub rng: ThreadRng,
     // pub monitors: HashMap<usize, Context<WsChatSession>>,
-}
-
-/// Role of the session.
-#[derive(PartialEq, Debug)]
-pub enum Identity {
-    /// `Anonymous` can't send danmaku when `REQUIRED_LOGIN` set `true`.
-    Anonymous,
-    /// `User(Name)` can send danmaku.
-    User(String),
-    /// `Admin(Name)` can send extra command info,
-    /// or receive statistic status.
-    Admin(String),
 }
 
 /// A `WsChatSession` is a map of websocket in server (normally, it means one user).
@@ -54,21 +42,30 @@ pub struct WsChatSession {
     pub message_processor: MessageProcessor,
 }
 
-/// Payload type.
-#[derive(Deserialize, Debug)]
-pub enum PayloadType {
-    Danmaku,
-    PlainDanmakuText,
+/// Role of the session.
+#[derive(PartialEq, Debug, Clone)]
+pub enum Identity {
+    /// `Anonymous` can't send danmaku when `REQUIRED_LOGIN` set `true`.
+    Anonymous,
+    /// `User(Name)` can send danmaku.
+    User(String),
+    /// `Admin(Name)` can send extra command info,
+    /// or receive statistic status.
+    Admin(String),
 }
 
-/// Payload itself.
-#[derive(Deserialize, Debug)]
-struct Payload {
-    r#type: PayloadType,
-    data: String,
+/// DPlayer compatible Danmaku info
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[allow(dead_code)]
+pub struct Danmaku {
+    #[serde(default)]
+    pub user: String,
+    pub text: String,
+    pub color: u32,
+    pub r#type: u8,
 }
 
-impl FromStr for Payload {
+impl FromStr for Danmaku {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -76,6 +73,109 @@ impl FromStr for Payload {
     }
 }
 
-pub mod server;
+/// Payload itself.
+///
+/// Used between the webSocket client and websocket actor model.
+#[derive(Deserialize, Debug)]
+#[serde(tag = "type", content = "data")]
+pub enum ClientMessage {
+    Danmaku(Danmaku),
+    PlainText(String),
+}
 
+// pub struct Message(pub String);
+
+/// Message that sent from `ChatServer` to `WsChatSession`,
+/// usually used for broadcast.
+#[derive(Message, Serialize, Debug, Clone)]
+#[serde(tag = "type", content = "data")]
+#[rtype(result = "()")]
+pub enum ServerMessage {
+    Danmaku(Danmaku),
+    /// Total Number of current room.
+    StatisticInfo(usize),
+    Identity(String),
+}
+
+/// Message that be sent from `WsChatSession` to `ChatServer`,
+/// then it will be broadcast.
+#[derive(Message, Clone, Debug)]
+#[rtype(result = "()")]
+pub struct DanmakuMessage {
+    /// id of user that sent this message
+    pub id: usize,
+    pub danmaku: Danmaku,
+    /// room name.
+    pub room: String,
+}
+
+/// Connect Signal
+#[derive(Message)]
+#[rtype(usize)]
+pub struct Connect {
+    /// the address of `WsChatSession`.
+    pub addr: Recipient<ServerMessage>,
+    /// the room name.
+    pub room: String,
+}
+
+/// Disconnect Signal
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct Disconnect {
+    pub id: usize,
+    pub room: String,
+}
+
+impl fmt::Display for Identity {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Identity::Anonymous => write!(f, "匿名用户"),
+            Identity::User(u) => write!(f, "{}", u),
+            Identity::Admin(a) => write!(f, "{}", a),
+        }
+    }
+}
+
+/// [`Identity`] to [`ServerMessage::Identity`]
+impl From<Identity> for ServerMessage {
+    fn from(i: Identity) -> Self {
+        ServerMessage::Identity(i.to_string())
+    }
+}
+
+impl FromStr for ClientMessage {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_str(s).map_err(|_| ())
+    }
+}
+
+impl From<DanmakuMessage> for ServerMessage {
+    fn from(d: DanmakuMessage) -> Self {
+        ServerMessage::Danmaku(d.danmaku)
+    }
+}
+
+pub mod server;
 pub mod session;
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_client_message_parser() {
+        let s = r#"{"type": "Danmaku", "data": {"type": 0, "text": "asdf", "color": 5592405}}"#;
+        assert_eq!(true, serde_json::from_str::<ClientMessage>(s).is_ok());
+
+        let s = r#"{"type": "PlainText", "data": "hahaha"}"#;
+        assert_eq!(true, serde_json::from_str::<ClientMessage>(s).is_ok());
+
+        let s = r#"{"type": "PlainText", "data":  {"text": "asdf"}}"#;
+        assert_eq!(true, serde_json::from_str::<ClientMessage>(s).is_err());
+    }
+
+    #[test]
+    fn test_server_message_parser() {}
+}
