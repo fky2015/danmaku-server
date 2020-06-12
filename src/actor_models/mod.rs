@@ -11,7 +11,9 @@ use std::collections::{HashMap, HashSet};
 
 use crate::message_processor::MessageProcessor;
 use actix::*;
+use failure::_core::fmt::Formatter;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::str::FromStr;
 use std::time::{Duration, Instant};
 
@@ -41,7 +43,7 @@ pub struct WsChatSession {
 }
 
 /// Role of the session.
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Identity {
     /// `Anonymous` can't send danmaku when `REQUIRED_LOGIN` set `true`.
     Anonymous,
@@ -92,6 +94,7 @@ pub enum ServerMessage {
     Danmaku(Danmaku),
     /// Total Number of current room.
     StatisticInfo(usize),
+    Identity(String),
 }
 
 /// Message that be sent from `WsChatSession` to `ChatServer`,
@@ -122,6 +125,23 @@ pub struct Connect {
 pub struct Disconnect {
     pub id: usize,
     pub room: String,
+}
+
+impl fmt::Display for Identity {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Identity::Anonymous => write!(f, "匿名用户"),
+            Identity::User(u) => write!(f, "{}", u),
+            Identity::Admin(a) => write!(f, "{}", a),
+        }
+    }
+}
+
+/// [`Identity`] to [`ServerMessage::Identity`]
+impl From<Identity> for ServerMessage {
+    fn from(i: Identity) -> Self {
+        ServerMessage::Identity(i.to_string())
+    }
 }
 
 impl FromStr for ClientMessage {

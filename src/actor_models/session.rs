@@ -91,6 +91,9 @@ impl Actor for WsChatSession {
                 fut::ready(())
             })
             .wait(ctx);
+
+        let t = serde_json::to_string(&ServerMessage::from(self.identity.clone())).unwrap();
+        ctx.text(t);
     }
 
     fn stopping(&mut self, _: &mut Self::Context) -> Running {
@@ -104,17 +107,17 @@ impl Actor for WsChatSession {
     }
 }
 
-impl Handler<DanmakuMessage> for WsChatSession {
-    type Result = ();
-    fn handle(&mut self, msg: DanmakuMessage, ctx: &mut Self::Context) {
-        // convert from DanmakuMessage to
-        println!(
-            "[{}] get message from server, send to peer WSSession.",
-            self.id
-        );
-        ctx.text(msg.danmaku.text);
-    }
-}
+// impl Handler<DanmakuMessage> for WsChatSession {
+//     type Result = ();
+//     fn handle(&mut self, msg: DanmakuMessage, ctx: &mut Self::Context) {
+//         // convert from DanmakuMessage to
+//         println!(
+//             "[{}] get message from server, send to peer WSSession.",
+//             self.id
+//         );
+//         ctx.text(msg.danmaku.text);
+//     }
+// }
 
 /// Handle messages from chat server, we simply send it to peer websocket.
 impl Handler<ServerMessage> for WsChatSession {
@@ -227,28 +230,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 // if msg.starts_with('/') & msg.contains(' ') {
                 //     // todo: 2. 获取统计信息（房间成员，房间弹幕） 这应该是 actor 的定时任务
                 //     // todo: 3. 获取某个成员统计信息（发弹幕数，登录时间，错误次数）
-                // } else {
-                //     // it's a danmaku format
-                //
-                //     // parse to check if it's a valid `Danmaku` format
-                //     if let Ok(danmaku) = msg.parse::<Danmaku>() {
-                //         match danmaku.valid() {
-                //             Ok(_) => {
-                //                 // send message to chat server
-                //                 self.addr.do_send(messages::ClientMessage {
-                //                     id: self.id,
-                //                     msg,
-                //                     room: self.room.to_owned(),
-                //                 });
-                //             }
-                //             Err(e) => {
-                //                 println!("Err: {}", e);
-                //             }
-                //         }
-                //     } else {
-                //         println!("parse err!");
-                //     };
-                // }
             }
             // `Anonymous` will be rejected.
             ws::Message::Text(text) => {
