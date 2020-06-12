@@ -10,20 +10,25 @@ use actix_identity::{CookieIdentityPolicy, Identity, IdentityService};
 
 use oauth2::basic::{BasicClient, BasicErrorResponse, BasicTokenResponse, BasicTokenType};
 use oauth2::reqwest::http_client;
-use oauth2::{AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope, TokenResponse, TokenUrl, Client};
+use oauth2::{
+    AuthUrl, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge,
+    RedirectUrl, Scope, TokenResponse, TokenUrl,
+};
 use uuid::Uuid;
 
-mod actor_models;
-mod messages;
+use env_logger::Env;
+use log::debug;
+use log::info;
 
+mod actor_models;
 use actor_models::{ChatServer, WsChatSession};
 
+use actix_files::NamedFile;
 use serde::Deserialize;
 use std::process::exit;
-use actix_files::NamedFile;
 
-mod session_models;
 mod message_processor;
+mod session_models;
 
 /// AuthID has two methods to identify a user
 /// `uuid` is used as OAuth2 login,
@@ -44,7 +49,7 @@ async fn chat_route(
     web::Query(auth): web::Query<Auth>,
     server_sessions: web::Data<session_models::SessionMap>,
 ) -> Result<HttpResponse, Error> {
-    println!("{:?}", req);
+    debug!("{:?}", req);
 
     let identity = if auth.secret_key.is_some() {
         // will be first login as higher priority.
@@ -64,12 +69,11 @@ async fn chat_route(
         if config.required_login {
             match name {
                 None => actor_models::Identity::Anonymous,
-                Some(name)=> actor_models::Identity::User(name),
+                Some(name) => actor_models::Identity::User(name),
             }
-        }  else {
+        } else {
             actor_models::Identity::User("Anonymous".to_owned())
         }
-
     };
     ws::start(
         WsChatSession {
@@ -78,6 +82,7 @@ async fn chat_route(
             room: "Test".into(),
             identity,
             addr: srv.get_ref().clone(),
+            message_processor: message_processor::MessageProcessor {},
         },
         &req,
         stream,
@@ -114,21 +119,21 @@ async fn oidc_redirected(
     server_session: web::Data<session_models::SessionMap>,
     client: web::Data<Client<BasicErrorResponse, BasicTokenResponse, BasicTokenType>>,
 ) -> Result<HttpResponse, Error> {
-    println!("{:?}", req);
+    debug!("{:?}", req);
     // let uuid = session.get::<String>("uuid").unwrap().unwrap();
     if let Some(uuid) = id.identity() {
         // better err handling
         let mut session_map = server_session.user_data.lock().unwrap();
         let user_data = session_map
             .remove(&uuid)
-            .ok_or_else (|| error::ErrorBadRequest("invalid flow: user_data missing."))?;
+            .ok_or_else(|| error::ErrorBadRequest("invalid flow: user_data missing."))?;
 
         let (pkce_verifier, csrf_token) = user_data
             .credentials
             .ok_or_else(|| error::ErrorBadRequest("invalid flow: hadn't access /login/."))?;
 
-        if csrf_token.secret() !=  auth_code.state.secret() {
-            return Err(error::ErrorUnauthorized("wrong csrf token."))
+        if csrf_token.secret() != auth_code.state.secret() {
+            return Err(error::ErrorUnauthorized("wrong csrf token."));
         }
 
         // Now you can trade it for an access token.
@@ -158,11 +163,11 @@ async fn oidc_redirected(
             .header(http::header::SET_COOKIE, format!("uuid={}; Path=/", uuid))
             .finish())
     } else {
-        Err(error::ErrorBadRequest("invalid flow: you don't have session."))
+        Err(error::ErrorBadRequest(
+            "invalid flow: you don't have session.",
+        ))
     }
 }
-
-
 
 /// first, we redirect to the identity provider to login
 async fn login(
@@ -171,8 +176,7 @@ async fn login(
     server_session: web::Data<session_models::SessionMap>,
     client: web::Data<Client<BasicErrorResponse, BasicTokenResponse, BasicTokenType>>,
 ) -> Result<HttpResponse, Error> {
-    println!("{:?}", req);
-
+    debug!("{:?}", req);
 
     if let Some(id) = id.identity() {
         // has already login, redirect to index page.
@@ -182,8 +186,6 @@ async fn login(
                 .finish());
         }
     }
-
-
 
     // Generate a PKCE challenge.
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
@@ -210,7 +212,7 @@ async fn login(
     session_map.insert(
         uuid,
         session_models::UserData {
-            credentials: Some((pkce_verifier,csrf_token)),
+            credentials: Some((pkce_verifier, csrf_token)),
             user_info: None,
         },
     );
@@ -239,13 +241,13 @@ fn default_required_login() -> bool {
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 struct Config {
-    client_id:String,
+    client_id: String,
     client_secret: String,
     redirect_url: String,
     auth_url: String,
     token_url: String,
     #[serde(default = "default_address")]
-    address : String,
+    address: String,
     #[serde(default = "default_port")]
     port: u32,
     secret_key: String,
@@ -256,14 +258,20 @@ struct Config {
 /// then
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::from_env(Env::default().default_filter_or("info")).init();
 
-    dotenv::dotenv().unwrap();
+    if cfg!(not(feature = "docker")) {
+        dotenv::dotenv().unwrap();
+        debug!("you should see me when target is not docker!");
+    }
 
     let config = match envy::from_env::<Config>() {
-        Ok(c) => {println!("{:#?}",c);
-        c}
+        Ok(c) => {
+            debug!("{:#?}", c);
+            c
+        }
         Err(err) => {
-            println!("env error: {:#?}", err);
+            debug!("env error: {:#?}", err);
             exit(1);
         }
     };
@@ -273,28 +281,36 @@ async fn main() -> std::io::Result<()> {
     // Create an OAuth2 client by specifying the client ID, client secret, authorization URL and
     // token URL.
     // BasicTokenResponse<EmptyExtraTokenFields, BasicTokenType>, BasicTokenType
-    let client =
-        BasicClient::new(
-            ClientId::new(config.client_id.to_owned()),
-            Some(ClientSecret::new(config.client_secret.to_owned())),
-            AuthUrl::new(config.auth_url.to_owned()).map_err(err2internal_err).unwrap(),
-            Some(TokenUrl::new(config.token_url.to_owned()).map_err(err2internal_err).unwrap()),
-        )
-            // Set the URL the user will be redirected to after the authorization process.
-            .set_redirect_url(RedirectUrl::new(config.redirect_url.to_owned()).map_err(err2internal_err).unwrap());
+    let client = BasicClient::new(
+        ClientId::new(config.client_id.to_owned()),
+        Some(ClientSecret::new(config.client_secret.to_owned())),
+        AuthUrl::new(config.auth_url.to_owned())
+            .map_err(err2internal_err)
+            .unwrap(),
+        Some(
+            TokenUrl::new(config.token_url.to_owned())
+                .map_err(err2internal_err)
+                .unwrap(),
+        ),
+    )
+    // Set the URL the user will be redirected to after the authorization process.
+    .set_redirect_url(
+        RedirectUrl::new(config.redirect_url.to_owned())
+            .map_err(err2internal_err)
+            .unwrap(),
+    );
 
-    let client =web::Data::new(client);
+    let client = web::Data::new(client);
 
-
-
-    env_logger::init();
+    // env_logger::init();
 
     // Start chat server actor
     let server = ChatServer::default().start();
     let session_map = web::Data::new(session_models::SessionMap::default());
 
+    info!("start at http://{}:{}", config.address, config.port);
     // Create Http server with websocket support
-    HttpServer::new(move |  | {
+    HttpServer::new(move || {
         App::new()
             .app_data(session_map.clone())
             .app_data(client.clone())
@@ -313,7 +329,7 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/login/redirected/").route(web::get().to(oidc_redirected)))
             .service(fs::Files::new("/static/", "static/"))
     })
-    .bind(format!("{}:{}", config.address,config.port))?
+    .bind(format!("{}:{}", config.address, config.port))?
     .run()
     .await
 }
@@ -321,4 +337,3 @@ async fn main() -> std::io::Result<()> {
 async fn index() -> actix_web::Result<NamedFile> {
     Ok(NamedFile::open("static/index.html")?)
 }
-

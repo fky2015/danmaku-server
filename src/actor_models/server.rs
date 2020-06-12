@@ -4,29 +4,41 @@
 //!
 //!
 
-
 use super::*;
-
+use log::info;
 
 impl ChatServer {
-    /// Send message to all users in the room.
-    ///
-    /// # Arguments
-    ///
-    /// * `room`: room name
-    ///
-    /// #
-    fn broadcast_message(&self, room: &str, message: &str, skip_id: usize) {
+    fn broadcast(&self, room: &str, server_message: ServerMessage, skip_id: usize) {
+        info!("broadcast: {:?}", server_message);
         if let Some(sessions) = self.rooms.get(room) {
             for id in sessions {
                 if *id != skip_id {
                     if let Some(addr) = self.sessions.get(id) {
-                        let _ = addr.do_send(messages::Message(message.to_owned()));
+                        let _ = addr.do_send(server_message.clone());
                     }
                 }
             }
         }
     }
+
+    // / Send message to all users in the room.
+    // /
+    // / # Arguments
+    // /
+    // / * `room`: room name
+    // /
+    // / #
+    // fn broadcast_message(&self, room: &str, message: &str, skip_id: usize) {
+    //     if let Some(sessions) = self.rooms.get(room) {
+    //         for id in sessions {
+    //             if *id != skip_id {
+    //                 if let Some(addr) = self.sessions.get(id) {
+    //                     let _ = addr.do_send(Message(message.to_owned()));
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
     // todo: broadcast monitor message
 
     // todo: hb to send monitor data
@@ -50,58 +62,65 @@ impl Actor for ChatServer {
     type Context = Context<Self>;
 }
 
-
-impl Handler<messages::ClientMessage> for ChatServer {
+impl Handler<DanmakuMessage> for ChatServer {
     type Result = ();
 
-    fn handle(&mut self, msg: messages::ClientMessage, _: &mut Self::Context) {
+    fn handle(&mut self, danmaku: DanmakuMessage, _: &mut Self::Context) {
         // do some checks before broadcast.
         // 根据 msg 本身进行过滤。
-        let data = msg.msg.to_owned();
-        // TODO: currently working on.
-        // if let Ok(danmaku) = data.parse::<Danmaku>() {
-        //
-        // }
+        // let data = msg.ned();
+        // TODO: log
 
-        self.broadcast_message(&msg.room, &msg.msg, msg.id);
+        let skip_id = danmaku.id;
+        let room = danmaku.room.to_owned();
+        self.broadcast(&room, ServerMessage::from(danmaku), skip_id);
     }
 }
 
-impl Handler<messages::Connect> for ChatServer {
+trait TempTest {}
+
+impl Handler<Connect> for ChatServer {
     /// id
     type Result = usize;
 
-    fn handle(&mut self, msg: messages::Connect, _: &mut Self::Context) -> Self::Result {
-        println!("someone joined");
+    fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
+        info!("someone joined");
 
         // notify all users in same room
-        self.broadcast_message(&msg.room, "Someone joined", 0);
+        // self.broadcast_message(&msg.room, "Someone joined", 0);
 
         // register session with random id
         let id = self.rng.gen::<usize>();
         self.sessions.insert(id, msg.addr);
 
         // join session
-        let s = self.rooms.entry(msg.room).or_default();
+        let s = self.rooms.entry(msg.room.to_owned()).or_default();
         s.insert(id);
+        let room_size = s.len();
 
+        self.broadcast(&msg.room, ServerMessage::StatisticInfo(room_size), 0);
         // send new id back
         id
     }
 }
 
 /// Handler for Disconnect message.
-impl Handler<messages::Disconnect> for ChatServer {
+impl Handler<Disconnect> for ChatServer {
     type Result = ();
 
-    fn handle(&mut self, msg: messages::Disconnect, _: &mut Self::Context) {
-        println!("Someone disconnect");
+    fn handle(&mut self, msg: Disconnect, _: &mut Self::Context) {
+        info!("Someone disconnect");
 
         // remove address
         self.sessions.remove(&msg.id);
 
         // remove room info
         // free memory when no one left in room.
-        self.rooms.get_mut(&msg.room).unwrap().remove(&msg.id);
+        let room = self.rooms.get_mut(&msg.room).unwrap();
+        room.remove(&msg.id);
+
+        // broadcast
+        let room_size = room.len();
+        self.broadcast(&msg.room, ServerMessage::StatisticInfo(room_size), 0);
     }
 }

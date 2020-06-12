@@ -2,11 +2,12 @@
 <br />
 <div align="center">
 <!--
-  <a href="https://github.com/github_username/repo">
+  <a href="https://github.com/fky2015/danmaku-server">
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 -->
-  <h3 align="center">Danmaku Server</h3>
+  <h3 align="center">Danmaku Server <span style="color: #f14e71;font-style: oblique;">(Still Under Swiftly Developed)</span></h3>
+ 
   
 [![Status][status-badge]][status-url]
 [![Contributors][contributors-shield]][contributors-url]
@@ -16,20 +17,20 @@
 [![Docker Image Size][docker-image-size-badge]][docker-image-size-url]
 [![MIT License][license-badge]][license-url]
 
-A [DPlayer](dplayer-url) Compatible Danmaku Server built with actix-web.
+A [DPlayer][dplayer-url] Compatible Danmaku Server built with [actix-web][actix-web-url].
     
-<!--
+---
+    
+<!--<a href="https://github.com/fky2015/danmaku-server"><strong>Explore the docs »</strong></a>
 <br />
-    
-    <a href="https://github.com/github_username/repo"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/github_username/repo">View Demo</a>
-    ·
-    <a href="https://github.com/github_username/repo/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/github_username/repo/issues">Request Feature</a>
--->    
+<br />
+-->
+<a href="https://danmaku.fkynjyq.com"><b> 😘View Our Demo! </b></a>
+·
+<a href="https://github.com/fky2015/danmaku-server/issues">Report Bug</a>
+·
+<a href="https://github.com/fky2015/danmaku-server/issues">Request Feature</a>
+ 
 
 </div>
 
@@ -37,9 +38,7 @@ A [DPlayer](dplayer-url) Compatible Danmaku Server built with actix-web.
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Danmaku Server aimed to be a B
-
-a danmaku server based on [Actix-web][actix-web-url],
+Danmaku Server aimed to be a danmaku server based on [Actix-web][actix-web-url],
 compatible with [DPlayer][dplayer-url].
 
 ### Feature
@@ -58,7 +57,13 @@ To get a local copy up and running follow these simple steps.
 
 ### Prerequisites
 
-Nightly built Rust.
+| version             | building status                                                                                                                                                                                                                                |
+| :---:               | :---:                                                                                                                                                                                                                                          |
+| MSRV 1.40           | [![](https://github.com/fky2015/danmaku-server/workflows/CI%20for%20MSRV/badge.svg)](https://github.com/fky2015/danmaku-server/actions?query=workflow%3A%22CI+for+MSRV%22)                                                                     |
+| stable              | [![](https://github.com/fky2015/danmaku-server/workflows/CI%20for%20STABLE/badge.svg)](https://github.com/fky2015/danmaku-server/actions?query=workflow%3A%22CI+for+STABLE%22)                                                                 |
+| beta                | [![](https://github.com/fky2015/danmaku-server/workflows/CI%20for%20BETA/badge.svg)](https://github.com/fky2015/danmaku-server/actions?query=workflow%3A%22CI+for+BETA%22)                                                                     |
+| nightly             | [![](https://github.com/fky2015/danmaku-server/workflows/CI%20for%20NIGHTLY/badge.svg)](https://github.com/fky2015/danmaku-server/actions?query=workflow%3A%22CI+for+NIGHTLY%22)                                                               |
+| latest docker build | [![](https://github.com/fky2015/danmaku-server/workflows/Perform%20Unit%20Test,%20Build%20and%20Push%20Docker/badge.svg)](https://github.com/fky2015/danmaku-server/actions?query=workflow%3A%22Perform+Unit+Test%2C+Build+and+Push+Docker%22) |
 
 ### Installation
  
@@ -103,27 +108,30 @@ cargo run
 ## Roadmap
 
 - Feature
-    - [ ] **Filter malicious behavior**
+    - [ ] Filter malicious behavior
         - [x] Anonymous user
-        - [ ] **Danmaku text longer than limit**.
+        - [x] Danmaku text longer than limit.
         - [ ] Frequently sent messages. 
-    - [ ] Provide metric data.
+    - [x] Provide Statistic number.
+        - [x] Total number in the room.
+    - [ ] **Provide metric data**.
     - [ ] Better server log
 - Role
     - [ ] Add Admin
     - [ ] Add control message
         - [ ] Retrieve log
-    - [ ] New project for sending danmaku or manage server via cli. 
 - CI/CD
-    - [ ] Docker support.
-    - [ ] Add unit test to core function.
-    - [ ] Add CI.
-    - [ ] Add CD to auto deploy test server. 
-
+    - [x] Docker support.
+    - [x] Add unit test to core function.
+    - [x] Add CI.
+    - [x] Add CD to auto deploy test server. 
+- Related
+    - [ ] New project for sending danmaku or manage server via cli.
+    - [x] New [project][danmaku-server-test-page-url] to test danmaku-server with JS, hosted. 
 
 ***Bold** text means currently working on.*
 
-See the [open issues](https://github.com/github_username/repo/issues) for a list of proposed features (and known issues).
+See the [open issues](https://github.com/fky2015/danmaku-server/issues) for a list of proposed features (and known issues).
 
 
 
@@ -146,13 +154,12 @@ Contributions are what make the open source community such an amazing place to b
 Distributed under the MIT License. See `LICENSE` for more information.
 
 
-
 <!-- CONTACT -->
 ## Contact
 
 FKYnJYQ - [🐦twitter](https://twitter.com/FKYnJYQ) - loveress01@outlook.com
 
-Project Link: [https://github.com/github_username/repo](https://github.com/fky2015/danmaku-server)
+Project Link: [github.com/fky2015/danmaku-server](https://github.com/fky2015/danmaku-server)
 
 
 <!-- ACKNOWLEDGEMENTS
@@ -178,12 +185,14 @@ Project Link: [https://github.com/github_username/repo](https://github.com/fky20
 [issues-url]: https://github.com/fky2015/danmaku-server/issues
 [license-badge]: https://flat.badgen.net/github/license/fky2015/danmaku-server?color=purple
 [license-url]: https://github.com/fky2015/danmaku-server/blob/master/LICENSE.txt
-[status-badge]: https://flat.badgen.net/github/status/fky2015/danmaku-server
+[status-badge]: https://flat.badgen.net/github/checks/fky2015/danmaku-server/
+<!--[status-badge]: https://github.com/fky2015/danmaku-server/workflows/CI%20for%20STABLE/badge.svg -->
 [status-url]: https://github.com/fky2015/danmaku-server
 [docker-image-size-badge]: https://badgen.net/docker/size/fkynjyq/danmaku-server?color=green
 [docker-image-size-url]: https://hub.docker.com/repository/docker/fkynjyq/danmaku-server
 [product-screenshot]: images/screenshot.png
 [actix-web-url]: https://github.com/actix/actix-web
 [dplayer-url]: https://github.com/MoePlayer/DPlayer
+[danmaku-server-test-page-url]: https://danmaku.fkynjyq.com
 
 

@@ -1,8 +1,11 @@
 [package]
 name = "danmaku-server"
-version = "0.1.0"
+version = "0.2.1"
 authors = ["FKYnJYQ <loveress01@gmail.com>"]
 edition = "2018"
+
+[features]
+docker = []
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -25,3 +28,8 @@ jsonwebtoken = "7.0.1"
 actix-identity = "0.2.1"
 envy = "0.4.1"
 dotenv = "0.15.0"
+log = "0.4.8"
+
+[dev-dependencies]
+rusty-hook = "^0.11.1"
+
